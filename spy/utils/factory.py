@@ -25,7 +25,7 @@ EMSG_YARP_NOT_FOUND = "Could not connect to the yarp server. Try running 'yarp d
 class YarpFactory(object):
 
 
-    def __createPort(self, name, target = None, mode = 'buffered'):
+    def __createPort(self, name, target = None, mode = 'unbuffered'):
         """ This method returns a port object.
     
         @param name     - yarp name for the port
@@ -57,7 +57,7 @@ class YarpFactory(object):
         return port
     
     
-    def createInputPort(self, name, mode = 'buffered'):
+    def createInputPort(self, name, mode = 'unbuffered'):
         """ This method returns an input port.
         
         @param obj      - the object that the port is created for
@@ -69,7 +69,7 @@ class YarpFactory(object):
         return self.__createPort(name + ':i', None, mode)
     
     
-    def createOutputPort(self, name, target = None, mode = 'buffered'):
+    def createOutputPort(self, name, target = None, mode = 'unbuffered'):
         """ This method returns an output port.
         
         @param obj      - the object that the port is created for

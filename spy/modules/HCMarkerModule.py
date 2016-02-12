@@ -42,11 +42,11 @@ class HCMarkerModule(BaseModule):
 
         BaseModule.configure(self, rf)
     
-        self.markersPort = self.createOutputPort('markers', mode = 'unbuffered')
-        self.orderPort   = self.createOutputPort('order', mode = 'unbuffered')
+        self.markersPort = self.createOutputPort('markers')
+        self.orderPort   = self.createOutputPort('order')
 
-        self.imgInPort   = self.createInputPort('img', 'image')
-        self.imgOutPort  = self.createOutputPort('img', mode = 'image')
+        self.imgInPort   = self.createInputPort('img')
+        self.imgOutPort  = self.createOutputPort('img')
         
         self.bufImageIn,  self.bufArrayIn  = self.createImageBuffer(640, 480, 3)
         self.bufImageOut, self.bufArrayOut = self.createImageBuffer(640, 480, 3)
