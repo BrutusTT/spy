@@ -45,6 +45,8 @@ Parameters:
 
     []            - denotes optional parameter
     <ModuleName>  - can be one of the following: - HCMarker
+                                                 - OCFaceDetector
+                                                 - TSUserSkeleton
     <Name Prefix> - if a name is given it will be used as a prefix for the port names
                     e.g.:  --name test results in /test/JDModule/rpc
 
