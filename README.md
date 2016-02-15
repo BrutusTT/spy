@@ -44,13 +44,13 @@ Each module can be started standalone using the following command line.
 Parameters:
 
     []            - denotes optional parameter
-    <ModuleName>  - can be one of the following: - HCMarkerModule
+    <ModuleName>  - can be one of the following: - HCMarker
     <Name Prefix> - if a name is given it will be used as a prefix for the port names
                     e.g.:  --name test results in /test/JDModule/rpc
 
 Example:
 
-    python -m spy.modules.HCMarkerModuel --name MySpy
+    python -m spy.modules.HCMarker --name MySpy
 
 
 ## General
@@ -59,7 +59,7 @@ The package contains Yarp modules that can be used to make (virtual) sensors or 
 accessible to yarp-based setups. Once the modules are started, they provide RPC Ports for 
 controlling the internal settings and additional ports for providing information.
 
-The **HCMarkerModule** is used to recognize Hamming Marker and provides information about them.
+The **HCMarker** module is used to recognize Hamming Marker and provides information about them.
 
     ...
 

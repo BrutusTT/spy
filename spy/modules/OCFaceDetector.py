@@ -15,35 +15,45 @@
 #    You should have received a copy of the GNU Affero General Public License                      #
 #    along with SPY.  If not, see <http://www.gnu.org/licenses/>.                                  #
 ####################################################################################################
+import os.path as op
 import cv2
 import yarp
 
-try:
-    from ar_markers.hamming.detect import detect_markers
-except:
-    print '[HCMarkerModule] Can not import ar_markers. This module will raise a RuntimeException.'
 
 from spy.modules.BaseModule import BaseModule, main
+from spy.utils              import getFiles
 
 
-class HCMarkerModule(BaseModule):
-    """ The HCMarkerModule class provides a yarp module for recognizing Hamming Markers. It is acts
-        as a wrapper for the python-ar-markers package by DebVortex.
+class OCFaceDetector(BaseModule):
+    """ The OCFaceDetector class provides a yarp module for recognizing faces based on the OpenCV
+        Haarcasade Classifier implementation.
     """
-    
-    D_WIDTH  = 640
-    D_HEIGHT = 480
+    D_WIDTH      = 640
+    D_HEIGHT     = 480
 
     O_HORIZONTAL = 0
     O_VERTICAL   = 1
 
+    HC           = {}
 
+
+    #
+    # Global initialization of the haarcascades
+    #
+    files = getFiles('/usr/local/share/opencv/haarcascades')
+    for _file in files:
+        _, filename = op.split(_file)
+
+        if filename.startswith('haarcascade'):
+            cname = filename.replace('haarcascade_', '').replace('.xml', '')
+            HC[cname] = cv2.CascadeClassifier(_file)
+    
+    
     def configure(self, rf):
 
         BaseModule.configure(self, rf)
     
-        self.markersPort = self.createOutputPort('markers')
-        self.orderPort   = self.createOutputPort('order')
+        self.facesPort  = self.createOutputPort('faces')
 
         self.imgInPort   = self.createInputPort('img')
         self.imgOutPort  = self.createOutputPort('img')
@@ -51,10 +61,9 @@ class HCMarkerModule(BaseModule):
         self.bufImageIn,  self.bufArrayIn  = self.createImageBuffer(640, 480, 3)
         self.bufImageOut, self.bufArrayOut = self.createImageBuffer(640, 480, 3)
     
-        self.order           = HCMarkerModule.O_HORIZONTAL
-        self.orderIsReversed = False
-        
         return True
+
+                
 
     
     def updateModule(self):
@@ -76,28 +85,7 @@ class HCMarkerModule(BaseModule):
         return True
 
 
-    def sendOrder(self, markers):
-        """ This method sends the order information to the order port.
-
-        Message: <markerid_1> <markerid_2> ... <markerid_n>
-
-        All values are integer values.
-
-        @param markers - list of HammingMarker from ar_markers package.
-        """
-
-        markers.sort(key = lambda x: x.center[self.order], reverse = self.orderIsReversed)
-
-        bottle = yarp.Bottle()
-        bottle.clear()
-
-        for marker in markers:
-            bottle.addInt(marker.id)
-            
-        self.orderPort.write(bottle)
-        
-
-    def sendMarkers(self, markers):
+    def sendFaces(self, faces):
         """ This method sends the marker information to the markers port.
 
         Message: <number of markers> ( ( <id> <center-x>  <center-y> <contour> )* )
@@ -111,83 +99,53 @@ class HCMarkerModule(BaseModule):
         bottle  = yarp.Bottle()
         bottle.clear()
 
-        bottle.addInt(len(markers))
-        markers_list = bottle.addList()
-        
-        for marker in markers:
-        
-            cx, cy        = marker.center
-            marker_values = markers_list.addList()
-            marker_values.addInt(marker.id)
-            marker_values.addInt(cx)
-            marker_values.addInt(cy)
-            marker_contour = marker_values.addList()
+        bottle.addInt(len(faces))
+        faces_list = bottle.addList()
 
-            for value in marker.contours:
-                marker_contour.addInt(int(value[0][0]))
-                marker_contour.addInt(int(value[0][1]))
+        face_id = 0        
+        for (x, y, w, h) in faces:
+            
+            _values      = faces_list.addList()
+            _values.addInt(face_id)
+            _values.addInt(int((x + w) / 2.0))
+            _values.addInt(int((y + h) / 2.0))
+            _contour     = _values.addList()
+            face_contour = [(x, y), (x + w, y), (x + w, y + h), ( x, y + h )]
+
+            for (x, y) in face_contour:
+                _contour.addInt(int(x))
+                _contour.addInt(int(y))
          
-        self.markersPort.write(bottle)
+            face_id += 1
+         
+        self.facesPort.write(bottle)
 
 
     def onImage(self, cv2_image):
         """ This method gets called upon receiving an input image given by cv2_image. 
         
-        The method detects the markers. Then it chooses one HammingMarker object for each recognized
-        marker id and draws it on the output image. Afterwards the additional information is send to
-        the corresponding ports.
+        The method detects faces and draws a bounding box around them on the output image. 
+        Afterwards the additional information is send to the corresponding ports.
         
         @param cv2_image - an OpenCV image object
         """
 
         # we only care for one contour
-        markers = {}
-        for marker in detect_markers(cv2_image):
-            markers[marker.id] = marker
-
-        markers = [ markers[mid] for mid in markers ]
-
-        # highlight markers in output image        
-        for marker in markers:
-            marker.highlite_marker(cv2_image)
-
-        self.sendMarkers(markers)
-        self.sendOrder(markers)
+        gray  = cv2.cvtColor(cv2_image, cv2.COLOR_RGB2GRAY)
+        faces = OCFaceDetector.HC['frontalface_default'].detectMultiScale(gray, 1.3, 5)
+        
+        for (x,y,w,h) in faces:
+            cv2.rectangle(cv2_image,(x,y),(x+w,y+h),(255,0,0),2)
+            roi_gray  = gray[y:y+h, x:x+w]
+            roi_color = cv2_image[y:y+h, x:x+w]
+            eyes = OCFaceDetector.HC['eye'].detectMultiScale(roi_gray)
+            for (ex,ey,ew,eh) in eyes:
+                cv2.rectangle(roi_color,(ex,ey),(ex+ew,ey+eh),(0,255,0),2)
+                
+        self.sendFaces(faces)
 
         return cv2_image
 
 
-    def respond(self, command, reply):
-
-        success = False
-        command = command.toString().split(' ')
-        
-        if command[0] == 'set':
-            
-            if command[1] == 'order':
-                
-                if command[2] == 'horizontal':
-                    self.order = HCMarkerModule.O_HORIZONTAL
-                    success = True
-
-                elif  command[2] == 'vertical':
-                    self.order = HCMarkerModule.O_VERTICAL
-                    success = True
-
-                elif command[2] == 'reverse':
-                    self.orderIsReversed = not self.orderIsReversed
-                    success = True
-
-        elif command[0] == 'get':
-
-            if command[1] == 'order':
-                reply.add('horizontal' if self.order == HCMarkerModule.O_HORIZONTAL else 'vertical')
-                reply.add('normal' if not self.orderIsReversed else 'reversed')
-                success = True
-
-        reply.addString('ack' if success else 'nack')
-        return True
-
-
 if __name__ == '__main__':
-    main(HCMarkerModule)
+    main(OCFaceDetector)
