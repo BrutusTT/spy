@@ -19,7 +19,7 @@ Example: OSX using [Homebrew](http://brew.sh)
 
 Additional dependencies:
 
-    Numpy           
+    NumPy           [http://www.numpy.org/]
     OpenCV          [http://opencv.org/]
     PythonArMarkers [https://github.com/DebVortex/python-ar-markers.git]
 
