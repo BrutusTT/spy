@@ -30,6 +30,7 @@ class BaseModule(yarp.RFModule, YarpFactory):
     def __init__(self, prefix):
         yarp.RFModule.__init__(self)
         self.prefix = prefix
+        self._ports = []
 
 
     def configure(self, rf):
@@ -55,12 +56,14 @@ class BaseModule(yarp.RFModule, YarpFactory):
 
 
     def interruptModule(self):
-        self.rpc_port.interrupt()
+        for port in reversed(self._ports):
+            port.interrupt()
         return True
 
 
-    def close(self):
-        self.rpc_port.close()
+    def close(self):        
+        for port in reversed(self._ports):
+            port.close()
         return True
 
 

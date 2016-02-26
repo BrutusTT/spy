@@ -74,6 +74,9 @@ class YarpFactory(object):
         if target:
             port.addOutput(target)
     
+        if hasattr(self, '_ports'):
+            self._ports.append(port)
+        
         return port
     
     

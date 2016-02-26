@@ -1,3 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env python2
 
-python -m spy.modules.OCFaceDetector
+from spy.modules.BaseModule import main
+from spy.modules            import OCFaceDetector
+
+if __name__ == '__main__':
+    main(OCFaceDetector)
