@@ -47,4 +47,10 @@ setup( name                 = 'SPY',
        entry_points         = """
        # -*- Entry points: -*-
        """,
+
+       scripts = [
+        'scripts/HCMarker',
+        'scripts/OCFaceDetector',
+        'scripts/TSUserSkeleton'
+       ]
      )
