@@ -51,7 +51,7 @@ class BaseModule(yarp.RFModule, YarpFactory):
             raise RuntimeError, EMSG_YARP_NOT_FOUND
 
         self.attach_rpc_server(self.rpc_port)
-
+        self._ports.append(self.rpc_port)
         return True
 
 
