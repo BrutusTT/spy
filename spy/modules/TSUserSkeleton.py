@@ -83,7 +83,13 @@ class TSUserSkeleton(BaseModule):
                 bottle.addString("Orientation")
                 bottle.addDouble(jData['ORI'][-1])
                 [bottle.addDouble(value) for value in jData['ORI_RM'].flatten()]
-                    
+
+            # pass the time value as first element in the envelop
+            ebottle   = yarp.Bottle()
+            ebottle.clear()
+            ebottle.addDouble(envelope_bottle.get(1).asDouble())
+                        
+            self.skeletonOutPort.setEnvelope(ebottle)
             self.skeletonOutPort.write(bottle)
 
 
