@@ -60,7 +60,11 @@ class TSUserSkeleton(BaseModule):
     
     def onBottle(self, input_bottle, envelope_bottle):
 
-        data = TSSkeletonReader(input_bottle).getData()
+        # ignore broken parsing such as "Calibration User" messages
+        try:
+            data = TSSkeletonReader(input_bottle).getData()
+        except:
+            return
 
         for key in data:
 
