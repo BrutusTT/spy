@@ -43,13 +43,16 @@ class OCFaceDetector(BaseModule):
     #
     # Global initialization of the haarcascades
     #
-    files = getFiles('/usr/local/share/opencv/haarcascades')
-    for _file in files:
-        _, filename = op.split(_file)
-
-        if filename.startswith('haarcascade'):
-            cname = filename.replace('haarcascade_', '').replace('.xml', '')
-            HC[cname] = cv2.CascadeClassifier(_file)
+    try:
+        files = getFiles('/usr/local/share/opencv/haarcascades')
+        for _file in files:
+            _, filename = op.split(_file)
+    
+            if filename.startswith('haarcascade'):
+                cname = filename.replace('haarcascade_', '').replace('.xml', '')
+                HC[cname] = cv2.CascadeClassifier(_file)
+    except Exception as e:
+        print e
     
     
     def configure(self, rf):
