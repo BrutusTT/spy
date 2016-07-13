@@ -16,7 +16,10 @@
 #    along with SPY.  If not, see <http://www.gnu.org/licenses/>.                                  #
 ####################################################################################################
 import os.path as op
-import cv2
+try:
+    import cv2
+except:
+    print '[OCFaceDetector] Can not import cv2. This module will raise a RuntimeException.'
 import yarp
 
 
