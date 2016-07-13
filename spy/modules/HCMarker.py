@@ -15,8 +15,13 @@
 #    You should have received a copy of the GNU Affero General Public License                      #
 #    along with SPY.  If not, see <http://www.gnu.org/licenses/>.                                  #
 ####################################################################################################
-import cv2
 import yarp
+
+try:
+    import cv2
+except:
+    print '[HCMarkerModule] Can not import cv2. This module will raise a RuntimeException.'
+
 
 try:
     from ar_markers.hamming.detect import detect_markers
@@ -53,6 +58,9 @@ class HCMarker(BaseModule):
     
         self.order           = HCMarker.O_HORIZONTAL
         self.orderIsReversed = False
+        
+        self.use_seen_markers   = True
+        self.prev_markers       = []
         
         return True
 
@@ -145,15 +153,24 @@ class HCMarker(BaseModule):
         for marker in detect_markers(cv2_image):
             markers[marker.id] = marker
 
-        markers = [ markers[mid] for mid in markers ]
+        marker_list = [ markers[mid] for mid in markers ]
+
+        # check if a prev marker
+        if self.use_seen_markers:
+            for mid in self.prev_markers:
+                if mid not in markers:
+                    marker_list.append(self.prev_markers[mid])
 
         # highlight markers in output image        
-        for marker in markers:
+        for marker in marker_list:
             marker.highlite_marker(cv2_image)
 
-        self.sendMarkers(markers)
-        self.sendOrder(markers)
+        self.sendMarkers(marker_list)
+        self.sendOrder(marker_list)
 
+
+        if self.use_seen_markers:
+            self.prev_markers = markers
         return cv2_image
 
 

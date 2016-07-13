@@ -27,9 +27,9 @@ EMSG_YARP_NOT_FOUND  = "Could not connect to the yarp server. Try running 'yarp 
 class BaseModule(yarp.RFModule, YarpFactory):
 
 
-    def __init__(self, prefix):
+    def __init__(self, args):
         yarp.RFModule.__init__(self)
-        self.prefix = prefix
+        self.prefix = args.name
         self._ports = []
 
 
@@ -96,12 +96,13 @@ def createArgParser():
     return parser.parse_args()
 
 
-def main(module_cls):
+def main(module_cls, args = None):
     """ This is a main method to run a module from command line. 
 
     @param module_cls - a SensorModule based class that can be started as a standalone module.
     """
-    args = createArgParser()
+    if args is None:
+        args = createArgParser()
 
     yarp.Network.init()
 
@@ -110,7 +111,7 @@ def main(module_cls):
 
     # resource_finder.configure(argc,argv);
 
-    module = module_cls(args.name)
+    module = module_cls(args)
     module.runModule(resource_finder)
 
     yarp.Network.fini()
