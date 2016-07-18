@@ -66,10 +66,7 @@ class HCMarker(BaseModule):
         self.order           = HCMarker.O_HORIZONTAL
         self.orderIsReversed = False
         
-        self.use_seen_markers   = True
-        self.prev_markers       = []
-        
-        self.memory            = {}
+        self.memory          = {}
         
         return True
 
@@ -164,26 +161,16 @@ class HCMarker(BaseModule):
 
         marker_list = [ markers[mid] for mid in markers ]
 
-        # check if a prev marker
-        if self.use_seen_markers:
-            for mid in self.prev_markers:
-                if mid not in markers:
-                    marker_list.append(self.prev_markers[mid])
-
-        print '+', [ m.id for m in marker_list]
-
+        # handle memory
         if self.memory_length > 0:
             
             # set all current marker information
             cur_time = time.time()
-            print '>', cur_time, self.memory_length
             for marker in marker_list:
                 self.memory[marker.id] = ( marker, cur_time )
-                print self.memory
 
             # create new marker list and only include marker which are within the time frame
             marker_list = [ self.memory[mid][0] for mid in self.memory if cur_time - self.memory[mid][1] < self.memory_length ]
-            print '-', [ m.id for m in marker_list]
 
         # highlight markers in output image        
         for marker in marker_list:
@@ -192,9 +179,6 @@ class HCMarker(BaseModule):
         self.sendMarkers(marker_list)
         self.sendOrder(marker_list)
 
-
-        if self.use_seen_markers:
-            self.prev_markers = markers
         return cv2_image
 
 
