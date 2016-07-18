@@ -15,6 +15,7 @@
 #    You should have received a copy of the GNU Affero General Public License                      #
 #    along with SPY.  If not, see <http://www.gnu.org/licenses/>.                                  #
 ####################################################################################################
+import argparse
 import time
 import yarp
 
@@ -42,6 +43,11 @@ class HCMarker(BaseModule):
 
     O_HORIZONTAL = 0
     O_VERTICAL   = 1
+    
+    
+    def __init__(self, args):
+        BaseModule.__init__(self, args)
+        self.memory_length = args.memory
 
 
     def configure(self, rf):
@@ -63,7 +69,6 @@ class HCMarker(BaseModule):
         self.use_seen_markers   = True
         self.prev_markers       = []
         
-        self.memory_length     = 0
         self.memory            = {}
         
         return True
@@ -231,5 +236,25 @@ class HCMarker(BaseModule):
         return True
 
 
+def createArgParser():
+    """ This method creates a base argument parser. 
+    
+    @return Argument Parser object
+    """
+    parser = argparse.ArgumentParser(description='Create a SensorModule for Yarp.')
+    parser.add_argument( '-n', '--name', 
+                         dest       = 'name', 
+                         default    = '',
+                         help       = 'Name prefix for Yarp port names')
+
+    parser.add_argument( '-m', '--memory', 
+                         dest       = 'memory', 
+                         type       = type(0),
+                         default    = 0,
+                         help       = 'Defines how long the marker positions are kept in memory.')
+
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
-    main(HCMarker)
+    main(HCMarker, createArgParser())
