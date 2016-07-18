@@ -15,6 +15,7 @@
 #    You should have received a copy of the GNU Affero General Public License                      #
 #    along with SPY.  If not, see <http://www.gnu.org/licenses/>.                                  #
 ####################################################################################################
+import time
 import yarp
 
 try:
@@ -61,6 +62,9 @@ class HCMarker(BaseModule):
         
         self.use_seen_markers   = True
         self.prev_markers       = []
+        
+        self.memory_length     = 0
+        self.memory            = {}
         
         return True
 
@@ -161,6 +165,21 @@ class HCMarker(BaseModule):
                 if mid not in markers:
                     marker_list.append(self.prev_markers[mid])
 
+        print '+', [ m.id for m in marker_list]
+
+        if self.memory_length > 0:
+            
+            # set all current marker information
+            cur_time = time.time()
+            print '>', cur_time, self.memory_length
+            for marker in marker_list:
+                self.memory[marker.id] = ( marker, cur_time )
+                print self.memory
+
+            # create new marker list and only include marker which are within the time frame
+            marker_list = [ self.memory[mid][0] for mid in self.memory if cur_time - self.memory[mid][1] < self.memory_length ]
+            print '-', [ m.id for m in marker_list]
+
         # highlight markers in output image        
         for marker in marker_list:
             marker.highlite_marker(cv2_image)
@@ -201,6 +220,12 @@ class HCMarker(BaseModule):
                 reply.add('horizontal' if self.order == HCMarker.O_HORIZONTAL else 'vertical')
                 reply.add('normal' if not self.orderIsReversed else 'reversed')
                 success = True
+
+        elif command[0] == 'memory':
+
+            self.memory_length = float(command[1])
+            success = True
+
 
         reply.addString('ack' if success else 'nack')
         return True
