@@ -16,6 +16,9 @@
 #    along with SPY.  If not, see <http://www.gnu.org/licenses/>.                                  #
 ####################################################################################################
 import os.path as op
+from time import time
+from bimdp.test import idx
+
 try:
     import cv2
 except:
@@ -59,10 +62,11 @@ class OCFaceDetector(BaseModule):
 
         BaseModule.configure(self, rf)
     
-        self.facesPort  = self.createOutputPort('faces')
+        self.facesPort     = self.createOutputPort('faces')
+        self.skeletonPort  = self.createOutputPort('skeleton')
 
-        self.imgInPort   = self.createInputPort('img')
-        self.imgOutPort  = self.createOutputPort('img')
+        self.imgInPort     = self.createInputPort('img')
+        self.imgOutPort    = self.createOutputPort('img')
         
         self.bufImageIn,  self.bufArrayIn  = self.createImageBuffer(640, 480, 3)
         self.bufImageOut, self.bufArrayOut = self.createImageBuffer(640, 480, 3)
@@ -92,14 +96,14 @@ class OCFaceDetector(BaseModule):
 
 
     def sendFaces(self, faces):
-        """ This method sends the marker information to the markers port.
+        """ This method sends the face information to the faces port.
 
-        Message: <number of markers> ( ( <id> <center-x>  <center-y> <contour> )* )
+        Message: <number of faces> ( ( <id> <center-x>  <center-y> <contour> )* )
                  <contour> = (<p1-x> <p1-y> <p2-x> <p2-y> <p3-x> <p3-y> <p4-x> <p4-y>)
 
         All values are integer values.
 
-        @param markers - list of HammingMarker from ar_markers package.
+        @param faces - list of faces.
         """
 
         bottle  = yarp.Bottle()
@@ -127,6 +131,41 @@ class OCFaceDetector(BaseModule):
         self.facesPort.write(bottle)
 
 
+    def sendPseudoSkeleton(self, faces):
+        """ This method sends the face information to the pseudo skeleton port.
+
+        Message: 
+
+        All values are integer values.
+
+        @param faces - list of faces.
+        """
+        if len(faces) == 0:
+            return
+
+        bottle  = yarp.Bottle()
+        bottle.clear()
+
+        # we only care for the largest face
+        maxWidth = 0
+        index    = 0
+
+        for idx, (_, _, w, _) in enumerate(faces):
+            maxWidth = max(maxWidth, w)
+            if w == maxWidth:
+                index = idx
+
+        (x, y, w, h) = faces[index]
+        
+        bottle.addString('Head')
+        bottle.addDouble(float(x))
+        bottle.addDouble(float(y))
+        bottle.addDouble(float(w))
+        bottle.addDouble(float(h))
+
+        self.skeletonPort.write(bottle)
+
+
     def onImage(self, cv2_image):
         """ This method gets called upon receiving an input image given by cv2_image. 
         
@@ -149,6 +188,7 @@ class OCFaceDetector(BaseModule):
                 cv2.rectangle(roi_color,(ex,ey),(ex+ew,ey+eh),(0,255,0),2)
                 
         self.sendFaces(faces)
+        self.sendPseudoSkeleton(faces)
 
         return cv2_image
 
