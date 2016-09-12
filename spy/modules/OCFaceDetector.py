@@ -16,8 +16,6 @@
 #    along with SPY.  If not, see <http://www.gnu.org/licenses/>.                                  #
 ####################################################################################################
 import os.path as op
-from time import time
-from bimdp.test import idx
 
 try:
     import cv2
