@@ -158,10 +158,10 @@ class OCFaceDetector(BaseModule):
         (x, y, w, h) = faces[index]
         
         bottle.addString('Head')
-        bottle.addDouble(float(x))
-        bottle.addDouble(float(y))
-        bottle.addDouble(float(w))
-        bottle.addDouble(float(h))
+        bottle.addDouble(1.0)
+        bottle.addDouble((x + w) / 2.0)
+        bottle.addDouble((y + h) / 2.0)
+        bottle.addDouble(1.0)
 
         self.skeletonPort.write(bottle)
 
