@@ -16,6 +16,7 @@
 #    along with SPY.  If not, see <http://www.gnu.org/licenses/>.                                  #
 ####################################################################################################
 import argparse
+import os.path as op
 import time
 import yarp
 
@@ -47,18 +48,33 @@ class HCMarker(BaseModule):
     
     def __init__(self, args):
         BaseModule.__init__(self, args)
-        self.memory_length = args.memory
-
+        self.memory_length  = args.memory
+        self.translation    = args.translation
+        self.translation_db = {}
+        
+        if self.translation:
+            
+            # check that we got a file
+            if not op.isfile(self.translation):
+                raise ValueError, 'Given translation path [%s] does not point to a file.' % self.translation
+            
+            # read translation database
+            with open(self.translation, 'r') as db:
+                for line in db.read().split('\n'):
+                    mid, word = line.split()
+                    self.translation_db[int(mid)] = word
+                
 
     def configure(self, rf):
 
         BaseModule.configure(self, rf)
     
-        self.markersPort = self.createOutputPort('markers')
-        self.orderPort   = self.createOutputPort('order')
+        self.markersPort     = self.createOutputPort('markers')
+        self.orderPort       = self.createOutputPort('order')
+        self.translationPort = self.createOutputPort('translation')
 
-        self.imgInPort   = self.createInputPort('img')
-        self.imgOutPort  = self.createOutputPort('img')
+        self.imgInPort       = self.createInputPort('img')
+        self.imgOutPort      = self.createOutputPort('img')
         
         self.bufImageIn,  self.bufArrayIn  = self.createImageBuffer(640, 480, 3)
         self.bufImageOut, self.bufArrayOut = self.createImageBuffer(640, 480, 3)
@@ -93,7 +109,7 @@ class HCMarker(BaseModule):
     def sendOrder(self, markers):
         """ This method sends the order information to the order port.
 
-        Message: <markerid_1> <markerid_2> ... <markerid_n>
+        Message: <markerid-1> <markerid-2> ... <markerid-n>
 
         All values are integer values.
 
@@ -110,6 +126,34 @@ class HCMarker(BaseModule):
             
         self.orderPort.write(bottle)
         
+
+    def sendTranslation(self, markers):
+        """ This method sends the translated marker IDs to the translation port. Order depends on 
+            the order settings. In case no translation for a marker ID is provided the marker ID 
+            will be returned as string.
+
+        Message: "<translation-1> <translation-2> ... <translation-n>"
+
+        The message is one string containing the words separated by a space.
+
+        @param markers - list of HammingMarker from ar_markers package.
+        """
+
+        markers.sort(key = lambda x: x.center[self.order], reverse = self.orderIsReversed)
+
+        bottle = yarp.Bottle()
+        bottle.clear()
+
+        # create translation string list
+        translation = []
+        for marker in markers:
+            translation.append(str(self.translation_db.get(marker.id, marker.id)))
+        
+        # transmit the joined strings
+        bottle.addString(' '.join(translation))
+            
+        self.translationPort.write(bottle)
+
 
     def sendMarkers(self, markers):
         """ This method sends the marker information to the markers port.
@@ -178,6 +222,7 @@ class HCMarker(BaseModule):
 
         self.sendMarkers(marker_list)
         self.sendOrder(marker_list)
+        self.sendTranslation(marker_list)
 
         return cv2_image
 
@@ -236,6 +281,11 @@ def createArgParser():
                          type       = type(0),
                          default    = 0,
                          help       = 'Defines how long the marker positions are kept in memory.')
+
+    parser.add_argument( '-t', '--translation', 
+                         dest       = 'translation', 
+                         default    = '',
+                         help       = 'Give a file path to a translation file.')
 
     return parser.parse_args()
 
