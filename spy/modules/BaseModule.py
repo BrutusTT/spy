@@ -35,7 +35,7 @@ class BaseModule(yarp.RFModule, YarpFactory):
 
     def configure(self, rf):
 
-        name = self.__class__.__name__ 
+        name = self.__class__.__name__
         if self.prefix:
             name = self.prefix + '/' + name
 
@@ -61,7 +61,7 @@ class BaseModule(yarp.RFModule, YarpFactory):
         return True
 
 
-    def close(self):        
+    def close(self):
         for port in reversed(self._ports):
             port.close()
         return True
@@ -79,17 +79,17 @@ class BaseModule(yarp.RFModule, YarpFactory):
 
 ####################################################################################################
 #
-# Default methods for running the modules standalone 
+# Default methods for running the modules standalone
 #
 ####################################################################################################
 def createArgParser():
-    """ This method creates a base argument parser. 
-    
+    """ This method creates a base argument parser.
+
     @return Argument Parser object
     """
     parser = argparse.ArgumentParser(description='Create a SensorModule for Yarp.')
-    parser.add_argument( '-n', '--name', 
-                         dest       = 'name', 
+    parser.add_argument( '-n', '--name',
+                         dest       = 'name',
                          default    = '',
                          help       = 'Name prefix for Yarp port names')
 
@@ -97,7 +97,7 @@ def createArgParser():
 
 
 def main(module_cls, args = None):
-    """ This is a main method to run a module from command line. 
+    """ This is a main method to run a module from command line.
 
     @param module_cls - a SensorModule based class that can be started as a standalone module.
     """

@@ -22,11 +22,11 @@ from spy.models.ts_skeleton   import TSSkeleton
 
 
 class TSSkeletonReader(BottleReader):
-    """ The TSSkeletonReader class provides a BottleReader for the transformation from 
+    """ The TSSkeletonReader class provides a BottleReader for the transformation from
         OpenNI2DeviceServer skeleton to the TutorSpotter skeleton.
     """
-    
-    
+
+
     def __init__(self, bottle, create_time = None):
         self.mode        = None
         self.cur_user    = 0
@@ -35,12 +35,11 @@ class TSSkeletonReader(BottleReader):
 
         BottleReader.__init__(self, bottle)
 
-    
 
     def readVocab(self, value):
         self.mode = value.asString()
 
-        if 'POS' == self.mode:
+        if self.mode == 'POS':
             self.data[self.cur_user].append( { 'POS' : [], 'ORI' : [] } )
 
 
@@ -49,21 +48,21 @@ class TSSkeletonReader(BottleReader):
 
 
     def readInt(self, value):
-        if 'USER' == self.mode:
+        if self.mode == 'USER':
             self.cur_user = value.asInt()
             self.data[self.cur_user] = []
 
         else:
-            print 'wrong mode', self.mode  
-            
-            
+            print 'wrong mode', self.mode
+
+
     def getData(self):
         create_time = time.time()
-        
+
         if self.create_time:
             create_time = self.create_time
-        
+
         for key in self.data:
             self.data[key] = TSSkeleton(key, self.data[key], create_time)
-            
+
         return BottleReader.getData(self)

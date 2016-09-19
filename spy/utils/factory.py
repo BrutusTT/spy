@@ -23,11 +23,11 @@ EMSG_YARP_NOT_FOUND = "Could not connect to the yarp server. Try running 'yarp d
 
 
 class YarpFactory(object):
-    """ The YarpFactor class provides convenience methods for handling Yarp related method calls 
-        such as port or buffer creations. 
+    """ The YarpFactor class provides convenience methods for handling Yarp related method calls
+        such as port or buffer creations.
 
         Additionally it maintains a naming convention on the ports it creates. Suffixes are added
-        to the port names to distinguish their intended use: 
+        to the port names to distinguish their intended use:
             ':i'   - input ports
             ':o'   - output ports
             ':rpc' - RPC ports
@@ -36,10 +36,10 @@ class YarpFactory(object):
 
     def __createPort(self, name, target = None, mode = 'unbuffered'):
         """ This method returns a port object.
-    
+
         @param name     - yarp name for the port
         @param obj      - object for which the port is created
-        @param buffered - if buffered is True a buffered port will be used otherwise not; 
+        @param buffered - if buffered is True a buffered port will be used otherwise not;
                           default is True.
         @result port
         """
@@ -49,67 +49,67 @@ class YarpFactory(object):
 
         elif mode == 'rpcclient':
             port = yarp.RpcClient()
-    
+
         elif mode == 'rpcserver':
             port = yarp.RpcServer()
-        
+
         else:
             port = yarp.Port()
-    
+
         # build port name
         port_name = ['']
 
         # prefix handling
         if hasattr(self, 'prefix') and self.prefix:
             port_name.append(self.prefix)
- 
+
         port_name.append(self.__class__.__name__)
         port_name.append(name)
-            
+
         # open port
         if not port.open('/'.join(port_name)):
             raise RuntimeError, EMSG_YARP_NOT_FOUND
-    
+
         # add output if given
         if target:
             port.addOutput(target)
-    
+
         if hasattr(self, '_ports'):
             self._ports.append(port)
-        
+
         return port
-    
-    
+
+
     def createInputPort(self, name, mode = 'unbuffered'):
         """ This method returns an input port.
-        
+
         @param obj      - the object that the port is created for
         @param name     - if a name is provided it gets appended to the modules name
-        @param buffered - if buffered is True a buffered port will be used otherwise not; 
+        @param buffered - if buffered is True a buffered port will be used otherwise not;
                           default is True.
         @result port
         """
         return self.__createPort(name + ':i', None, mode)
-    
-    
+
+
     def createOutputPort(self, name, target = None, mode = 'unbuffered'):
         """ This method returns an output port.
-        
+
         @param obj      - the object that the port is created for
         @param name     - if a name is provided it gets appended to the modules name
-        @param buffered - if buffered is True a buffered port will be used otherwise not; 
+        @param buffered - if buffered is True a buffered port will be used otherwise not;
                           default is True.
         @result port
         """
         return self.__createPort(name + ':o', target, mode)
-    
-    
+
+
     def createRpcClientPort(self, name, target = None):
         """ This method returns an output port.
-        
+
         @param obj      - the object that the port is created for
         @param name     - if a name is provided it gets appended to the modules name
-        @param buffered - if buffered is True a buffered port will be used otherwise not; 
+        @param buffered - if buffered is True a buffered port will be used otherwise not;
                           default is True.
         @result port
         """
@@ -118,14 +118,14 @@ class YarpFactory(object):
         else:
             name = 'rpc'
         return self.__createPort(name, target, 'rpcclient')
-    
-    
+
+
     def createRpcServerPort(self, name, obj = None, target = None):
         """ This method returns an output port.
-        
+
         @param obj      - the object that the port is created for
         @param name     - if a name is provided it gets appended to the modules name
-        @param buffered - if buffered is True a buffered port will be used otherwise not; 
+        @param buffered - if buffered is True a buffered port will be used otherwise not;
                           default is True.
         @result port
         """
@@ -135,53 +135,54 @@ class YarpFactory(object):
             name = 'rpc'
         return self.__createPort(name, target, 'rpcserver')
 
-    
-    @staticmethod    
+
+    @staticmethod
     def createImageBuffer(width = 320, height = 240, channels = 3):
-        """ This method creates image buffers with the specified \a width, \a height and number of 
+        """ This method creates image buffers with the specified \a width, \a height and number of
             color channels \a channels.
-            
+
         @param width    - integer specifying the width of the image   (default: 320)
         @param height   - integer specifying the height of the image  (default: 240)
         @param channels - integer specifying number of color channels (default: 3)
         @return image, buffer array
         """
-    
+
         if channels == 1:
             buf_image = yarp.ImageFloat()
             buf_image.resize(width, height)
-            
+
             buf_array = np.zeros((height, width), dtype = np.float32)
-            
+
         else:
             buf_image = yarp.ImageRgb()
             buf_image.resize(width, height)
-            
+
             buf_array = np.zeros((height, width, channels), dtype = np.uint8)
-    
-        buf_image.setExternal( buf_array, 
-                               buf_array.shape[1], 
+
+        buf_image.setExternal( buf_array,
+                               buf_array.shape[1],
                                buf_array.shape[0] )
-    
+
         return buf_image, buf_array
 
 
-    def connect(self, source_port, target_port):
+    @staticmethod
+    def connect(source_port, target_port):
         """ This method connects two ports.
-        
+
         If given a port it resolves the port names on its own.
-        
+
         @param source_port - can be either a string or an object with a getName method
         @param target_port - can be either a string or an object with a getName method
         @result boolean - returns whether the port could be connected or not
         """
-        
+
         # get the port name in case of a none-string argument
         if not isinstance(source_port, type('')) and hasattr(source_port, 'getName'):
             source_port = source_port.getName()
-            
+
         # get the port name in case of a none-string argument
         if not isinstance(target_port, type('')) and hasattr(target_port, 'getName'):
             target_port = target_port.getName()
-        
+
         return yarp.Network.connect(source_port, target_port)

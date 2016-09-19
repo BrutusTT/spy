@@ -23,11 +23,11 @@ from spy.reader.ts_skeleton_reader import TSSkeletonReader
 
 
 class TSUserSkeleton(BaseModule):
-    """ The TSUserSkeleton class provides a yarp module for the transformation between OpenNI2 
+    """ The TSUserSkeleton class provides a yarp module for the transformation between OpenNI2
         userSkeleton and the TutorSpotter skeleton.
     """
-    
-    USED_JOINTS = { TSSkeleton.HEAD:   'Head', 
+
+    USED_JOINTS = { TSSkeleton.HEAD:   'Head',
                     TSSkeleton.L_HAND: 'Left_Hand',
                     TSSkeleton.R_HAND: 'Right_Hand',
                     TSSkeleton.TORSO:  'Chest'  }
@@ -35,18 +35,18 @@ class TSUserSkeleton(BaseModule):
     def configure(self, rf):
 
         BaseModule.configure(self, rf)
-    
+
         self.skeletonInPort  = self.createInputPort('skeleton',  'buffered')
         self.skeletonOutPort = self.createOutputPort('skeleton', 'buffered')
         return True
 
-    
+
     def updateModule(self):
-        
-        # read the bottle              
+
+        # read the bottle
         input_bottle    = self.skeletonInPort.read()
 
-        # get the envelope as bottle            
+        # get the envelope as bottle
         envelope_bottle = self.skeletonInPort.prepare()
         envelope_bottle.clear()
         self.skeletonInPort.getEnvelope(envelope_bottle)
@@ -54,10 +54,10 @@ class TSUserSkeleton(BaseModule):
         # if bottle exists run the convert method
         if input_bottle:
             self.onBottle(input_bottle, envelope_bottle)
-        
+
         return True
 
-    
+
     def onBottle(self, input_bottle, envelope_bottle):
 
         # ignore broken parsing such as "Calibration User" messages
@@ -72,23 +72,23 @@ class TSUserSkeleton(BaseModule):
             skeleton = data[key]
             bottle   = yarp.Bottle()
             bottle.clear()
-    
+
             for joint, label in TSUserSkeleton.USED_JOINTS.items():
 
-                jData = skeleton.data[joint]
-        
+                j_data = skeleton.data[joint]
+
                 bottle.addString(label)
-                [bottle.addDouble(value) for value in ([jData['POS'][-1]] + jData['POS'][:3])]
-                    
+                _ = [bottle.addDouble(value) for value in [j_data['POS'][-1]] + j_data['POS'][:3]]
+
                 bottle.addString("Orientation")
-                bottle.addDouble(jData['ORI'][-1])
-                [bottle.addDouble(value) for value in jData['ORI_RM'].flatten()]
+                bottle.addDouble(j_data['ORI'][-1])
+                _ = [bottle.addDouble(value) for value in j_data['ORI_RM'].flatten()]
 
             # pass the time value as first element in the envelop
             ebottle   = yarp.Bottle()
             ebottle.clear()
             ebottle.addDouble(envelope_bottle.get(1).asDouble())
-                        
+
             self.skeletonOutPort.setEnvelope(ebottle)
             self.skeletonOutPort.write(bottle)
 

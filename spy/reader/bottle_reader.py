@@ -25,24 +25,24 @@ class BottleReader(object):
 
     E_ABSTRACT_CALL = 'Call of an abstract method. Implement if you inherit from BottleReader!'
 
-    
+
     def __init__(self, bottle):
-        """ This method creates the bottle reader and starts the reading. 
-        
+        """ This method creates the bottle reader and starts the reading.
+
         @param bottle - Yarp Bottle
         """
 
         self.data = {}
-        
+
         # flags
         self.vocabAsString = True
 
         # do the work
         self._readBottle(bottle)
-    
+
 
     def _readBottle(self, bottle):
-        """ This protected method is called to start the tree walking. 
+        """ This protected method is called to start the tree walking.
 
         @param bottle - Yarp Bottle
         """
@@ -55,11 +55,11 @@ class BottleReader(object):
 
             elif isinstance(item, Bottle):
                 self._readBottle(item)
-            
+
 
     def _readValue(self, value):
         """ This protected method is used to call the hook methods for each value type. """
-        
+
         if value.isVocab():
             self.readVocab(value)
 
@@ -79,12 +79,12 @@ class BottleReader(object):
 
 
     def getData(self):
-        """ This method needs to return the parsed data. 
-        
+        """ This method needs to return the parsed data.
+
         @result dictionary containing the parsed data
         """
         return self.data
-    
+
     ################################################################################################
     #
     # Tree Walker Abstract Methods
@@ -108,8 +108,8 @@ class BottleReader(object):
     def onListStart(self):
         """ This method is the hook method that is called if a new list was found. """
         pass
-    
-    
+
+
     def onListEnd(self):
         """ This method is the hook method that is called if a list has finished. """
         pass

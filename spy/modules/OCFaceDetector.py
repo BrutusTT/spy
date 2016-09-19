@@ -19,8 +19,9 @@ import os.path as op
 
 try:
     import cv2
-except:
+except ImportError:
     print '[OCFaceDetector] Can not import cv2. This module will raise a RuntimeException.'
+
 import yarp
 
 
@@ -48,36 +49,36 @@ class OCFaceDetector(BaseModule):
         files = getFiles('/usr/local/share/opencv/haarcascades')
         for _file in files:
             _, filename = op.split(_file)
-    
+
             if filename.startswith('haarcascade'):
                 cname = filename.replace('haarcascade_', '').replace('.xml', '')
                 HC[cname] = cv2.CascadeClassifier(_file)
     except Exception as e:
         print e
-    
-    
+
+
     def configure(self, rf):
 
         BaseModule.configure(self, rf)
-    
+
         self.facesPort     = self.createOutputPort('faces')
         self.skeletonPort  = self.createOutputPort('skeleton')
 
         self.imgInPort     = self.createInputPort('img')
         self.imgOutPort    = self.createOutputPort('img')
-        
+
         self.bufImageIn,  self.bufArrayIn  = self.createImageBuffer(640, 480, 3)
         self.bufImageOut, self.bufArrayOut = self.createImageBuffer(640, 480, 3)
-    
+
         return True
 
-                
 
-    
+
+
     def updateModule(self):
-        
+
         if self.imgInPort.read(self.bufImageIn):
-            
+
             # Make sure the image has not been re-allocated
             assert self.bufArrayIn.__array_interface__['data'][0] == self.bufImageIn.getRawImage().__long__()
 
@@ -89,7 +90,7 @@ class OCFaceDetector(BaseModule):
 
             # Send the result to the output port
             self.imgOutPort.write(self.bufImageOut)
-            
+
         return True
 
 
@@ -110,29 +111,29 @@ class OCFaceDetector(BaseModule):
         bottle.addInt(len(faces))
         faces_list = bottle.addList()
 
-        face_id = 0        
-        for (x, y, w, h) in faces:
-            
+        face_id = 0
+        for (x, y, width, height) in faces:
+
             _values      = faces_list.addList()
             _values.addInt(face_id)
-            _values.addInt(int((x + w) / 2.0))
-            _values.addInt(int((y + h) / 2.0))
+            _values.addInt(int((x + width)  / 2.0))
+            _values.addInt(int((y + height) / 2.0))
             _contour     = _values.addList()
-            face_contour = [(x, y), (x + w, y), (x + w, y + h), ( x, y + h )]
+            face_contour = [(x, y), (x + width, y), (x + width, y + height), ( x, y + height )]
 
             for (x, y) in face_contour:
                 _contour.addInt(int(x))
                 _contour.addInt(int(y))
-         
+
             face_id += 1
-         
+
         self.facesPort.write(bottle)
 
 
     def sendPseudoSkeleton(self, faces):
         """ This method sends the face information to the pseudo skeleton port.
 
-        Message: 
+        Message:
 
         All values are integer values.
 
@@ -141,50 +142,56 @@ class OCFaceDetector(BaseModule):
         if len(faces) == 0:
             return
 
-        bottle  = yarp.Bottle()
+        bottle = yarp.Bottle()
         bottle.clear()
 
         # we only care for the largest face
-        maxWidth = 0
-        index    = 0
+        max_width = 0
+        index     = 0
 
-        for idx, (_, _, w, _) in enumerate(faces):
-            maxWidth = max(maxWidth, w)
-            if w == maxWidth:
+        for idx, (_, _, width, _) in enumerate(faces):
+            max_width = max(max_width, width)
+            if width == max_width:
                 index = idx
 
-        (x, y, w, h) = faces[index]
-        
+        (x, y, width, height) = faces[index]
+
         bottle.addString('Head')
         bottle.addDouble(1.0)
-        bottle.addDouble((x + w) / 2.0)
-        bottle.addDouble((y + h) / 2.0)
+        bottle.addDouble((x + width)  / 2.0)
+        bottle.addDouble((y + height) / 2.0)
         bottle.addDouble(1.0)
 
         self.skeletonPort.write(bottle)
 
 
     def onImage(self, cv2_image):
-        """ This method gets called upon receiving an input image given by cv2_image. 
-        
-        The method detects faces and draws a bounding box around them on the output image. 
+        """ This method gets called upon receiving an input image given by cv2_image.
+
+        The method detects faces and draws a bounding box around them on the output image.
         Afterwards the additional information is send to the corresponding ports.
-        
+
         @param cv2_image - an OpenCV image object
         """
 
         # we only care for one contour
         gray  = cv2.cvtColor(cv2_image, cv2.COLOR_RGB2GRAY)
         faces = OCFaceDetector.HC['frontalface_default'].detectMultiScale(gray, 1.3, 5)
-        
-        for (x,y,w,h) in faces:
-            cv2.rectangle(cv2_image,(x,y),(x+w,y+h),(255,0,0),2)
-            roi_gray  = gray[y:y+h, x:x+w]
-            roi_color = cv2_image[y:y+h, x:x+w]
-            eyes = OCFaceDetector.HC['eye'].detectMultiScale(roi_gray)
-            for (ex,ey,ew,eh) in eyes:
-                cv2.rectangle(roi_color,(ex,ey),(ex+ew,ey+eh),(0,255,0),2)
-                
+
+        for (x, y, width, height) in faces:
+            cv2.rectangle(cv2_image, (x, y), (x + width, y + height), (255, 0, 0), 2)
+            roi_gray  = gray[y:y + height, x:x + width]
+            roi_color = cv2_image[y:y + height, x:x + width]
+            eyes      = OCFaceDetector.HC['eye'].detectMultiScale(roi_gray)
+
+            for (e_x, e_y, e_width, e_height) in eyes:
+                cv2.rectangle(  roi_color,
+                                (e_x, e_y),
+                                (e_x + e_width, e_y + e_height),
+                                (0, 255, 0),
+                                2
+                             )
+
         self.sendFaces(faces)
         self.sendPseudoSkeleton(faces)
 

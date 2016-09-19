@@ -20,10 +20,10 @@ import numpy as np
 
 class TSSkeleton(object):
     """ The TSSkeleton class provides a skeleton for the tutor spotter module. """
-    
 
-    JOINT_LABELS = [ 'head',            'neck', 
-                     'left shoulder',   'right shoulder', 
+
+    JOINT_LABELS = [ 'head',            'neck',
+                     'left shoulder',   'right shoulder',
                      'left elbow',      'right elbow',
                      'left hand',       'right hand',
                      'torso',
@@ -33,7 +33,7 @@ class TSSkeleton(object):
 
     HEAD        = 0
     NECK        = 1
-    
+
     L_SHOULDER  = 2
     R_SHOULDER  = 3
     L_ELBOW     = 4
@@ -49,14 +49,14 @@ class TSSkeleton(object):
     R_KNEE      = 12
     L_FOOT      = 13
     R_FOOT      = 14
-    
+
     # ORI_RM - Orientation Rotation Matrix
 
     def __init__(self, userid, data_dict = None, create_time = None):
 
         # overloaded constructor
         if isinstance(userid, dict):
-            self.uid          = userid['uid'] 
+            self.uid          = userid['uid']
             self.data         = userid['data']
             self.create_time  = userid['create_time']
         else:
@@ -65,27 +65,28 @@ class TSSkeleton(object):
             self.create_time  = create_time
 
         for i in range(len(self.data)):
-            self.data[i]['ORI_RM'] = self.quaternion_to_R(self.data[i]['ORI'])
+            self.data[i]['ORI_RM'] = TSSkeleton.quaternionToRotationMatrix(self.data[i]['ORI'])
 
 
     def getJoint(self, joint):
-        """ This method returns the position and orientation information for the specified joint. 
-        
-        @param joint: the selected joint \see joint constants.
-        @type  joint: integer
+        """ This method returns the position and orientation information for the specified joint.
+
+        @param joint - the selected joint @see joint constants.
+        @type  joint - integer
         """
         return self.data[joint]['POS'] + self.data[joint]['ORI']
 
-        
-    def quaternion_to_R(self, quat):
+
+    @staticmethod
+    def quaternionToRotationMatrix(quat):
         """Convert a quaternion into rotation matrix form.
-    
-        @param quat:    The quaternion.
-        @type  quat:    numpy 4D, rank-1 array
-        @param matrix:  A 3D matrix to convert to a rotation matrix.
-        @type  matrix:  numpy 3D, rank-2 array
+
+        @param quat    - The quaternion.
+        @type  quat    - numpy 4D, rank-1 array
+        @param matrix  - A 3D matrix to convert to a rotation matrix.
+        @type  matrix  - numpy 3D, rank-2 array
         """
-    
+
         # Repetitive calculations.
         q4_2 = quat[3]**2
         q12 = quat[0] * quat[1]
@@ -94,18 +95,18 @@ class TSSkeleton(object):
         q23 = quat[1] * quat[2]
         q24 = quat[1] * quat[3]
         q34 = quat[2] * quat[3]
-    
+
         # The diagonal.
         matrix = np.zeros( (3, 3) )
         matrix[0, 0] = 2.0 * (quat[0]**2 + q4_2) - 1.0
         matrix[1, 1] = 2.0 * (quat[1]**2 + q4_2) - 1.0
         matrix[2, 2] = 2.0 * (quat[2]**2 + q4_2) - 1.0
-    
+
         # Off-diagonal.
         matrix[0, 1] = 2.0 * (q12 - q34)
         matrix[0, 2] = 2.0 * (q13 + q24)
         matrix[1, 2] = 2.0 * (q23 - q14)
-    
+
         matrix[1, 0] = 2.0 * (q12 + q34)
         matrix[2, 0] = 2.0 * (q13 - q24)
         matrix[2, 1] = 2.0 * (q23 + q14)
@@ -121,13 +122,13 @@ class TSSkeleton(object):
                                                                 pos,
                                                                 ori ) )
         return '\n'.join(txt)
-    
-    
+
+
     def __repr__(self):
         data = {}
         for idx in range(len(self.data)):
             data[idx] = {}
             data[idx]['POS'] = self.data[idx]['POS']
             data[idx]['ORI'] = self.data[idx]['ORI']
-            
+
         return str( {'uid': self.uid, 'create_time' : self.create_time, 'data': data} )

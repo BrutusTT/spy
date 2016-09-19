@@ -22,13 +22,13 @@ import yarp
 
 try:
     import cv2
-except:
+except ImportError:
     print '[HCMarkerModule] Can not import cv2. This module will raise a RuntimeException.'
 
 
 try:
     from ar_markers.hamming.detect import detect_markers
-except:
+except ImportError:
     print '[HCMarkerModule] Can not import ar_markers. This module will raise a RuntimeException.'
 
 from spy.modules.BaseModule import BaseModule, main
@@ -38,59 +38,59 @@ class HCMarker(BaseModule):
     """ The HCMarkerModule class provides a yarp module for recognizing Hamming Markers. It is acts
         as a wrapper for the python-ar-markers package by DebVortex.
     """
-    
+
     D_WIDTH  = 640
     D_HEIGHT = 480
 
     O_HORIZONTAL = 0
     O_VERTICAL   = 1
-    
-    
+
+
     def __init__(self, args):
         BaseModule.__init__(self, args)
         self.memory_length  = args.memory
         self.translation    = args.translation
         self.translation_db = {}
-        
+
         if self.translation:
-            
+
             # check that we got a file
             if not op.isfile(self.translation):
-                raise ValueError, 'Given translation path [%s] does not point to a file.' % self.translation
-            
+                raise ValueError, 'Path [%s] does not point to a file.' % self.translation
+
             # read translation database
-            with open(self.translation, 'r') as db:
-                for line in db.read().split('\n'):
+            with open(self.translation, 'r') as _file:
+                for line in _file.read().split('\n'):
                     mid, word = line.split()
                     self.translation_db[int(mid)] = word
-                
+
 
     def configure(self, rf):
 
         BaseModule.configure(self, rf)
-    
+
         self.markersPort     = self.createOutputPort('markers')
         self.orderPort       = self.createOutputPort('order')
         self.translationPort = self.createOutputPort('translation')
 
         self.imgInPort       = self.createInputPort('img')
         self.imgOutPort      = self.createOutputPort('img')
-        
+
         self.bufImageIn,  self.bufArrayIn  = self.createImageBuffer(640, 480, 3)
         self.bufImageOut, self.bufArrayOut = self.createImageBuffer(640, 480, 3)
-    
+
         self.order           = HCMarker.O_HORIZONTAL
         self.orderIsReversed = False
-        
+
         self.memory          = {}
-        
+
         return True
 
-    
+
     def updateModule(self):
-        
+
         if self.imgInPort.read(self.bufImageIn):
-            
+
             # Make sure the image has not been re-allocated
             assert self.bufArrayIn.__array_interface__['data'][0] == self.bufImageIn.getRawImage().__long__()
 
@@ -102,7 +102,7 @@ class HCMarker(BaseModule):
 
             # Send the result to the output port
             self.imgOutPort.write(self.bufImageOut)
-            
+
         return True
 
 
@@ -123,13 +123,13 @@ class HCMarker(BaseModule):
 
         for marker in markers:
             bottle.addInt(marker.id)
-            
+
         self.orderPort.write(bottle)
-        
+
 
     def sendTranslation(self, markers):
-        """ This method sends the translated marker IDs to the translation port. Order depends on 
-            the order settings. In case no translation for a marker ID is provided the marker ID 
+        """ This method sends the translated marker IDs to the translation port. Order depends on
+            the order settings. In case no translation for a marker ID is provided the marker ID
             will be returned as string.
 
         Message: "<translation-1> <translation-2> ... <translation-n>"
@@ -148,10 +148,10 @@ class HCMarker(BaseModule):
         translation = []
         for marker in markers:
             translation.append(str(self.translation_db.get(marker.id, marker.id)))
-        
+
         # transmit the joined strings
         bottle.addString(' '.join(translation))
-            
+
         self.translationPort.write(bottle)
 
 
@@ -171,30 +171,30 @@ class HCMarker(BaseModule):
 
         bottle.addInt(len(markers))
         markers_list = bottle.addList()
-        
+
         for marker in markers:
-        
-            cx, cy        = marker.center
+
+            center_x, center_y        = marker.center
             marker_values = markers_list.addList()
             marker_values.addInt(marker.id)
-            marker_values.addInt(cx)
-            marker_values.addInt(cy)
+            marker_values.addInt(center_x)
+            marker_values.addInt(center_y)
             marker_contour = marker_values.addList()
 
             for value in marker.contours:
                 marker_contour.addInt(int(value[0][0]))
                 marker_contour.addInt(int(value[0][1]))
-         
+
         self.markersPort.write(bottle)
 
 
     def onImage(self, cv2_image):
-        """ This method gets called upon receiving an input image given by cv2_image. 
-        
+        """ This method gets called upon receiving an input image given by cv2_image.
+
         The method detects the markers. Then it chooses one HammingMarker object for each recognized
         marker id and draws it on the output image. Afterwards the additional information is send to
         the corresponding ports.
-        
+
         @param cv2_image - an OpenCV image object
         """
 
@@ -207,7 +207,7 @@ class HCMarker(BaseModule):
 
         # handle memory
         if self.memory_length > 0:
-            
+
             # set all current marker information
             cur_time = time.time()
             for marker in marker_list:
@@ -216,7 +216,7 @@ class HCMarker(BaseModule):
             # create new marker list and only include marker which are within the time frame
             marker_list = [ self.memory[mid][0] for mid in self.memory if cur_time - self.memory[mid][1] < self.memory_length ]
 
-        # highlight markers in output image        
+        # highlight markers in output image
         for marker in marker_list:
             marker.highlite_marker(cv2_image)
 
@@ -231,11 +231,11 @@ class HCMarker(BaseModule):
 
         success = False
         command = command.toString().split(' ')
-        
+
         if command[0] == 'set':
-            
+
             if command[1] == 'order':
-                
+
                 if command[2] == 'horizontal':
                     self.order = HCMarker.O_HORIZONTAL
                     success = True
@@ -266,24 +266,24 @@ class HCMarker(BaseModule):
 
 
 def createArgParser():
-    """ This method creates a base argument parser. 
-    
+    """ This method creates a base argument parser.
+
     @return Argument Parser object
     """
     parser = argparse.ArgumentParser(description='Create a SensorModule for Yarp.')
-    parser.add_argument( '-n', '--name', 
-                         dest       = 'name', 
+    parser.add_argument( '-n', '--name',
+                         dest       = 'name',
                          default    = '',
                          help       = 'Name prefix for Yarp port names')
 
-    parser.add_argument( '-m', '--memory', 
-                         dest       = 'memory', 
+    parser.add_argument( '-m', '--memory',
+                         dest       = 'memory',
                          type       = type(0),
                          default    = 0,
                          help       = 'Defines how long the marker positions are kept in memory.')
 
-    parser.add_argument( '-t', '--translation', 
-                         dest       = 'translation', 
+    parser.add_argument( '-t', '--translation',
+                         dest       = 'translation',
                          default    = '',
                          help       = 'Give a file path to a translation file.')
 
