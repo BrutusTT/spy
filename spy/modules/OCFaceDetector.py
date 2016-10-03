@@ -116,8 +116,8 @@ class OCFaceDetector(BaseModule):
 
             _values      = faces_list.addList()
             _values.addInt(face_id)
-            _values.addInt(int((x + width)  / 2.0))
-            _values.addInt(int((y + height) / 2.0))
+            _values.addInt(int(x + (width / 2.0)))
+            _values.addInt(int(y + (height / 2.0)))
             _contour     = _values.addList()
             face_contour = [(x, y), (x + width, y), (x + width, y + height), ( x, y + height )]
 
@@ -158,8 +158,8 @@ class OCFaceDetector(BaseModule):
 
         bottle.addString('Head')
         bottle.addDouble(1.0)
-        bottle.addDouble((x + width)  / 2.0)
-        bottle.addDouble((y + height) / 2.0)
+        bottle.addDouble(x + (width  / 2.0) )
+        bottle.addDouble(y + (height / 2.0) )
         bottle.addDouble(1.0)
 
         self.skeletonPort.write(bottle)
